@@ -9,6 +9,7 @@ using Microsoft.Azure.Devices.Client;
 using Newtonsoft.Json;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace simulated_device
 {
@@ -27,18 +28,26 @@ namespace simulated_device
             // Initial telemetry values
             double minTemperature = 20;
             double minHumidity = 60;
+            double currentLatitude = -22.970469;
+            double currentLongitude = -43.395419;
+            CultureInfo culture = CultureInfo.CreateSpecificCulture("en-US");
+            string specifier = "G";
             Random rand = new Random();
 
             while (true)
             {
                 double currentTemperature = minTemperature + rand.NextDouble() * 15;
                 double currentHumidity = minHumidity + rand.NextDouble() * 20;
+                currentLatitude = currentLatitude + 0.000100;
+                currentLongitude = currentLongitude + 0.000100;
 
                 // Create JSON message
                 var telemetryDataPoint = new
                 {
                     temperature = currentTemperature,
-                    humidity = currentHumidity
+                    humidity = currentHumidity,
+                    Latitude = currentLatitude,
+                    Longitude = currentLongitude
                 };
                 var messageString = JsonConvert.SerializeObject(telemetryDataPoint);
                 var message = new Message(Encoding.ASCII.GetBytes(messageString));
@@ -46,6 +55,8 @@ namespace simulated_device
                 // Add a custom application property to the message.
                 // An IoT hub can filter on these properties without access to the message body.
                 message.Properties.Add("temperatureAlert", (currentTemperature > 30) ? "true" : "false");
+                message.Properties.Add("Latitude", currentLatitude.ToString(specifier, culture));
+                message.Properties.Add("Longitude", currentLongitude.ToString(specifier, culture));
 
                 // Send the telemetry message
                 await s_deviceClient.SendEventAsync(message);
